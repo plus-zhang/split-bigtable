@@ -1,0 +1,19 @@
+mysql:
+  datasource:
+  name: mysqlDatasource
+  driver-class-name: com.mysql.cj.jdbc.Driver
+  url: jdbc:mysql://local:3306/example?useUnicode=true&characterEncoding=utf8
+  username: root
+  password: root
+  initialSize: 20
+  maxActive: 200
+  minIdle: 50
+  max-wait: 60000
+  remove-abandoned-timeout: 180
+  test-on-borrow: true
+  test-on-return: false
+  test-while-idle: true
+  validation-query: SELECT 1
+  time-between-eviction-runs-millis: 60000
+  min-evictable-idle-time-millis: 300000
+  type: com.alibaba.druid.pool.DruidDataSource
