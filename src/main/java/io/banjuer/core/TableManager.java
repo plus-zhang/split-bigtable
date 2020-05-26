@@ -1,7 +1,7 @@
 package io.banjuer.core;
 
 import io.banjuer.config.ProjectConst;
-import io.banjuer.config.SplitType;
+import io.banjuer.config.em.SplitType;
 import io.banjuer.exception.SqlParseException;
 import io.banjuer.helper.JdbcHelper;
 import io.banjuer.helper.MySQLJdbcTemplate;

@@ -1,4 +1,4 @@
-package io.banjuer.config;
+package io.banjuer.config.em;
 
 public enum SplitType {
     /**

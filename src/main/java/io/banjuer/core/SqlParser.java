@@ -1,18 +1,27 @@
 package io.banjuer.core;
 
-import io.banjuer.config.SplitType;
+import io.banjuer.config.em.SplitType;
+import io.banjuer.config.em.SqlType;
 import io.banjuer.exception.SqlParseException;
 import io.banjuer.util.CharacterUtils;
 import io.banjuer.util.EmptyUtils;
 import io.banjuer.util.Md5Utils;
 import io.banjuer.util.StringUtils;
 
+/**
+ * @author gcs
+ */
 public class SqlParser {
 
     /**
      * 原始sql
      */
     private String sql;
+
+    /**
+     * sql类型
+     */
+    private SqlType sqlType;
 
     /**
      * 表名
@@ -61,20 +70,33 @@ public class SqlParser {
 
     private TableManager.TableDesc tableDesc;
 
+    public SqlParser(String sql) {
+        simpleCheck(sql);
+        this.sql = sql;
+        formatLower();
+    }
+    
+    public SqlType getSqlType() {
+        if (this.sqlType == null) {
+            this.sqlType = SqlType.valueOf(formatted.split(" ")[0]);
+        }
+        return this.sqlType;
+    }
+
     /**
      * 缓存key: table_md5(formatted)
      * table开头, 为了以后更新插入表, 删除缓存所用
      */
     public String getSqlKey() {
         if (sqlKey == null) {
-            this.sqlKey = this.getTableName() + "_" + Md5Utils.hash(this.getFormatted());
+            this.sqlKey = this.getTableName() + "_" + Md5Utils.hash(this.formatted);
         }
         return sqlKey;
     }
 
     public String[] getSelectFields() {
         if (fields == null) {
-            String[] fields = this.getFormatted().split(" from ")[0].substring("select ".length()).trim().split(",");
+            String[] fields = this.formatted.split(" from ")[0].substring("select ".length()).trim().split(",");
             StringUtils.trim(fields);
             this.fields = fields;
         }
@@ -149,11 +171,6 @@ public class SqlParser {
         return tableDesc;
     }
 
-    private SqlParser(String sql) {
-        simpleCheck(sql);
-        this.sql = sql.trim();
-    }
-
     private void simpleCheck(String sql) {
         if (EmptyUtils.isEmpty(sql)) {
             throw new SqlParseException("empty sql");
@@ -165,9 +182,6 @@ public class SqlParser {
     }
 
     public String getFormatted() {
-        if (formatted == null) {
-            this.formatLower();
-        }
         return formatted;
     }
 
@@ -198,7 +212,7 @@ public class SqlParser {
 
     public String getTableName() {
         if (this.tableName == null) {
-            String formatted = this.getFormatted();
+            String formatted = this.formatted;
             String afterWhere = getAfterWhere();
             int end = "null".equals(afterWhere) ? formatted.length() : formatted.length() - afterWhere.length() - " where".length();
             this.tableName = formatted.substring(formatted.indexOf("from ") + "from ".length(), end);
@@ -208,7 +222,7 @@ public class SqlParser {
 
     private String getAfterWhere() {
         if (afterWhere == null) {
-            String formatted = this.getFormatted();
+            String formatted = this.formatted;
             String[] wheres = formatted.split("where");
             if (wheres.length == 1) {
                 this.afterWhere = "null";
@@ -224,7 +238,7 @@ public class SqlParser {
         // String sql = " Select * from  T_data";
         String sql = "=1 and";
         SqlParser parser = SqlParser.parse(sql);
-        // String formatted = parser.getFormatted();
+        // String formatted = parser.formatted;
         // String tabName = parser.getTableName();
 
         System.out.println(sql.split("=")[1].trim().split(" ")[0]);
