@@ -2,85 +2,38 @@ package io.banjuer.core;
 
 import io.banjuer.config.em.SplitType;
 import io.banjuer.config.em.SqlType;
-import io.banjuer.exception.SqlParseException;
 import io.banjuer.util.CharacterUtils;
-import io.banjuer.util.EmptyUtils;
 import io.banjuer.util.Md5Utils;
-import io.banjuer.util.StringUtils;
 
-/**
- * @author gcs
- */
-public class SqlParser {
+public abstract class SqlParser {
 
-    /**
-     * 原始sql
-     */
-    private String sql;
+    protected String sql;
 
-    /**
-     * sql类型
-     */
-    private SqlType sqlType;
+    protected String lowerSql;
+
+    protected SqlType sqlType;
+
+    protected String tableName;
+
+    protected String[] referShardValues;
 
     /**
-     * 表名
+     * sql唯一标识(用于缓存), 同时也是临时表名
      */
-    private String tableName;
+    protected String sqlKey;
+
+    protected TableManager.TableDesc tableDesc;
 
     /**
-     * where后语句
+     * 调用者进行简单检查
      */
-    private String afterWhere;
-
-    /**
-     * 查询的字段
-     */
-    private String[] fields;
-
-    /**
-     * sql唯一标识(用于缓存)
-     */
-    private String sqlKey;
-
-    /**
-     * 分表字段
-     */
-    private String shardField;
-
-    /**
-     * 分表字段类型
-     */
-    private String shardType;
-
-    /**
-     * 查询的分片值
-     */
-    private String[] shardValues;
-
-    /**
-     * 格式化的sql
-     */
-    private String formatted;
-
-    /**
-     * 分表方式
-     */
-    private SplitType splitType;
-
-    private TableManager.TableDesc tableDesc;
-
-    public SqlParser(String sql) {
-        simpleCheck(sql);
+    protected SqlParser(String sql) {
         this.sql = sql;
-        formatLower();
+        init();
     }
-    
-    public SqlType getSqlType() {
-        if (this.sqlType == null) {
-            this.sqlType = SqlType.valueOf(formatted.split(" ")[0]);
-        }
-        return this.sqlType;
+
+    private void init() {
+        formatLower();
     }
 
     /**
@@ -89,100 +42,9 @@ public class SqlParser {
      */
     public String getSqlKey() {
         if (sqlKey == null) {
-            this.sqlKey = this.getTableName() + "_" + Md5Utils.hash(this.formatted);
+            this.sqlKey = tableName+ "_" + Md5Utils.hash(lowerSql);
         }
         return sqlKey;
-    }
-
-    public String[] getSelectFields() {
-        if (fields == null) {
-            String[] fields = this.formatted.split(" from ")[0].substring("select ".length()).trim().split(",");
-            StringUtils.trim(fields);
-            this.fields = fields;
-        }
-        return fields;
-    }
-
-    /**
-     * 当查询条件指定了分片值, 只查对应分片表, 如果未指定, 则所有分片全查
-     */
-    public String[] getShardValues() {
-        if (this.shardValues == null) {
-            if (this.getAfterWhere().contains(this.getShardField())) {
-                String afterShard = this.afterWhere.split( shardField)[1].trim();
-                if (afterShard.startsWith("in")) {
-                    this.shardValues = getInValues(afterShard);
-                } else if (afterShard.startsWith("=")) {
-                    this.shardValues = getEqValues(afterShard);
-                } else {
-                    throw new SqlParseException("unsupport operation: " + afterShard);
-                }
-            } else {
-                this.shardValues = tableDesc.shardValues;
-            }
-        }
-        return shardValues;
-    }
-
-    /**
-     * in ('a', 'b',...)
-     */
-    private String[] getInValues(String sql) {
-        String[] strings = sql.substring(sql.indexOf("(") + 1, sql.indexOf(")")).split(",");
-        for (int i = 0; i < strings.length; i++) {
-            strings[i] = strings[i].trim();
-        }
-        return strings;
-    }
-
-    /**
-     * =1
-     */
-    private String[] getEqValues(String sql) {
-        String s = sql.split("=")[1].trim().split(" ")[0];
-        return new String[]{s};
-    }
-
-    public SplitType getSplitType() {
-        if (this.splitType == null) {
-            this.splitType = this.getTableDesc().splitType;
-        }
-        return splitType;
-    }
-
-    public String getShardType() {
-        if (this.shardType == null) {
-            this.shardType = this.getTableDesc().shardType;
-        }
-        return shardType;
-    }
-
-    public String getShardField() {
-        if (this.shardField == null) {
-            this.shardField = this.getTableDesc().shardField;
-        }
-        return shardField;
-    }
-
-    private TableManager.TableDesc getTableDesc() {
-        if (tableDesc == null) {
-            this.tableDesc = TableManager.getDesc(this.getTableName());
-        }
-        return tableDesc;
-    }
-
-    private void simpleCheck(String sql) {
-        if (EmptyUtils.isEmpty(sql)) {
-            throw new SqlParseException("empty sql");
-        }
-    }
-
-    public static SqlParser parse(String sql) {
-        return new SqlParser(sql);
-    }
-
-    public String getFormatted() {
-        return formatted;
     }
 
     /**
@@ -207,41 +69,23 @@ public class SqlParser {
             }
             sb.append(cur);
         }
-        this.formatted = sb.toString();
+        this.lowerSql = sb.toString();
     }
 
-    public String getTableName() {
-        if (this.tableName == null) {
-            String formatted = this.formatted;
-            String afterWhere = getAfterWhere();
-            int end = "null".equals(afterWhere) ? formatted.length() : formatted.length() - afterWhere.length() - " where".length();
-            this.tableName = formatted.substring(formatted.indexOf("from ") + "from ".length(), end);
-        }
-        return tableName;
+    public SplitType getSplitType() {
+        return tableDesc.splitType;
     }
 
-    private String getAfterWhere() {
-        if (afterWhere == null) {
-            String formatted = this.formatted;
-            String[] wheres = formatted.split("where");
-            if (wheres.length == 1) {
-                this.afterWhere = "null";
-            } else {
-                this.afterWhere = wheres[1];
-            }
-        }
-        return afterWhere;
+    public SqlType getSqlType() {
+        return sqlType;
     }
 
-    public static void main(String[] args) {
-        // String sql = " Select * from  T_data where    a =  'Yes' and b=3 OR  c=' he llo' ";
-        // String sql = " Select * from  T_data";
-        String sql = "=1 and";
-        SqlParser parser = SqlParser.parse(sql);
-        // String formatted = parser.formatted;
-        // String tabName = parser.getTableName();
+    public String getShardType() {
+        return tableDesc.shardType;
+    }
 
-        System.out.println(sql.split("=")[1].trim().split(" ")[0]);
+    public String getShardField() {
+        return tableDesc.shardField;
     }
 
 }

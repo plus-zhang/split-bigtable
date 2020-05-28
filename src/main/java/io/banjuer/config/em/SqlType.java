@@ -7,5 +7,6 @@ public enum SqlType {
      */
     select,
     update,
-    insert
+    insert,
+    delete
 }

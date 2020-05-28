@@ -23,13 +23,25 @@ public class TableManager {
 
         String tableName;
 
-        String shardField;
+        /**
+         * 分表字段
+         */
+        protected String shardField;
 
-        SplitType splitType;
+        /**
+         * 分表方式
+         */
+        protected SplitType splitType;
 
-        String shardType;
+        /**
+         * 分表字段类型
+         */
+        protected String shardType;
 
-        String[] shardValues;
+        /**
+         * 分片值
+         */
+        protected String[] shardValues;
 
     }
 
@@ -44,7 +56,7 @@ public class TableManager {
     }
 
     private static void initTable(String tableName) {
-        MySQLJdbcTemplate template = JdbcHelper.INSTANCE.getMysqlJdbc(ProjectConst.DATABASE);
+        MySQLJdbcTemplate template = JdbcHelper.INSTANCE.getMysqlJdbc();
         // TODO 表导入完毕?
         template.executeQuery(String.format("select * from %s where table_name=?", ProjectConst.TABLE_NAME_MANAGE), new Object[]{tableName}, rs -> {
             int columnCount = rs.getMetaData().getColumnCount();
