@@ -3,6 +3,7 @@ package io.banjuer.helper;
 
 import com.alibaba.druid.pool.DruidDataSourceFactory;
 import io.banjuer.config.CustomProperties;
+import io.banjuer.exception.SqlRunnerException;
 import io.banjuer.util.EmptyUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -69,12 +70,6 @@ public abstract class BaseJdbcTemplate {
 
     /**
      * 获取连接
-     * <p>
-     * 如果不是使用连接池，则每次创建连接
-     *
-     * @return
-     * @throws SQLException
-     * @throws ClassNotFoundException
      */
     protected Connection getConnection() throws SQLException, ClassNotFoundException {
         if (null == dataSource) {
@@ -89,9 +84,6 @@ public abstract class BaseJdbcTemplate {
 
     /**
      * 获取指定数据库的jdbc属性
-     *
-     * @param key 属性名
-     * @return
      */
     private String getJdbcProperty(String key) {
         return CustomProperties.jdbc.getProperty(String.format(JDBC_KEY, this.dbType, this.dbName, key));
@@ -99,10 +91,6 @@ public abstract class BaseJdbcTemplate {
 
     /**
      * 设置参数
-     *
-     * @param pstmt
-     * @param params
-     * @throws SQLException
      */
     private void setParams(PreparedStatement pstmt, Object[] params) throws SQLException {
         if (params != null && params.length > 0) {
@@ -114,13 +102,9 @@ public abstract class BaseJdbcTemplate {
 
     /**
      * 执行增删改SQL语句
-     *
-     * @param sql
-     * @param params
-     * @return 影响的行数
      */
     public int executeUpdate(String sql, Object[] params) {
-        int rtn = 0;
+        int rtn;
         Connection conn = null;
         PreparedStatement pstmt = null;
         try {
@@ -133,7 +117,7 @@ public abstract class BaseJdbcTemplate {
         } catch (Exception e) {
             String param = EmptyUtils.isEmpty(params) ? "" : StringUtils.join(params, ",");
             log.error("执行sql:［" + sql + "］出错, 参数:［" + param + "］", e);
-            e.printStackTrace();
+            throw new SqlRunnerException(e.getMessage());
         } finally {
             closeStatement(pstmt);
             closeConnection(conn);
@@ -143,12 +127,9 @@ public abstract class BaseJdbcTemplate {
 
     /**
      * 执行DDL语句
-     *
-     * @param sql
-     * @return 影响的行数
      */
     public int executeDDL(String sql) throws SQLException {
-        int rtn = 0;
+        int rtn;
         Connection conn = null;
         Statement stmt = null;
         try {
@@ -160,7 +141,7 @@ public abstract class BaseJdbcTemplate {
         } catch (Exception e) {
             e.printStackTrace();
             log.error("执行sql:［" + sql + "］出错 ", e);
-            throw new SQLException(e);
+            throw new SqlRunnerException(e.getMessage());
         } finally {
             closeStatement(stmt);
             closeConnection(conn);
@@ -170,10 +151,6 @@ public abstract class BaseJdbcTemplate {
 
     /**
      * 执行查询SQL语句
-     *
-     * @param sql
-     * @param params
-     * @param callback
      */
     public void executeQuery(String sql, Object[] params, QueryCallback callback) {
         Connection conn = null;
@@ -189,6 +166,7 @@ public abstract class BaseJdbcTemplate {
             e.printStackTrace();
             String param = EmptyUtils.isEmpty(params) ? "" : StringUtils.join(params, ",");
             log.error("执行sql:［" + sql + "］出错, 参数:［" + param + "］", e);
+            throw new SqlRunnerException(e.getMessage());
         } finally {
             closeStatement(pstmt);
             closeResultSet(rs);
@@ -198,10 +176,6 @@ public abstract class BaseJdbcTemplate {
 
     /**
      * 批量执行SQL语句
-     *
-     * @param sql
-     * @param paramsList
-     * @return 每条SQL语句影响的行数
      */
     public int[] executeBatch(String sql, List<Object[]> paramsList) {
         int[] rtn = null;
@@ -226,7 +200,7 @@ public abstract class BaseJdbcTemplate {
             // 最后一步：使用Connection对象，提交批量的SQL语句
             conn.commit();
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new SqlRunnerException(e.getMessage());
         } finally {
             closeStatement(pstmt);
             closeConnection(conn);
@@ -240,17 +214,12 @@ public abstract class BaseJdbcTemplate {
     public interface QueryCallback {
         /**
          * 处理查询结果
-         *
-         * @param rs
-         * @throws Exception
          */
         void process(ResultSet rs) throws Exception;
     }
 
     /**
      * 资源关闭
-     *
-     * @param resultSet
      */
     protected void closeResultSet(ResultSet resultSet) {
         if (resultSet == null) {

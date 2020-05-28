@@ -9,4 +9,16 @@ public class StringUtils {
             strs[i] = strs[i].trim();
         }
     }
+
+    public static String join(String[] strs){
+        if (EmptyUtils.isEmpty(strs))
+            return "";
+        StringBuilder sb = new StringBuilder();
+        for (String str : strs) {
+            String s = str == null ? "" : str;
+            sb.append(' ').append(s);
+        }
+        return sb.toString().trim();
+    }
+
 }

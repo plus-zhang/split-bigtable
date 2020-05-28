@@ -66,6 +66,10 @@ public class BaseResponse<T> implements Serializable {
         return new BaseResponse<>(Type.success, msg);
     }
 
+    public static <T> BaseResponse<T> success(T data) {
+        return new BaseResponse<>(Type.success, data);
+    }
+
     public static <T> BaseResponse<T> success(String msg, T data) {
         return new BaseResponse<>(Type.success, msg, data);
     }

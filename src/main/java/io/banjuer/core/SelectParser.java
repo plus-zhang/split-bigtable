@@ -2,6 +2,7 @@ package io.banjuer.core;
 
 import io.banjuer.config.ProjectConst;
 import io.banjuer.config.em.SqlType;
+import io.banjuer.exception.SqlParseException;
 
 /**
  * @author gcs
@@ -21,9 +22,16 @@ public class SelectParser extends SqlParser {
     private String limitSegm;
 
     /**
-     * 待占位符的格式化sql
+     * 执行的第一条sql, 作用:
+     * 1. sql检查提前, 避免同时很多条异步查询报错
+     * 2. 提前建表, 后续sql可以通过select into 插入临时表
      */
-    private String lowerSqlHolder;
+    private String select0;
+
+    /**
+     * 临时表
+     */
+    private String tempTable;
 
     /**
      * 最终结果sql
@@ -34,6 +42,7 @@ public class SelectParser extends SqlParser {
         super(sql);
         selectInit();
         tableDesc = TableManager.getDesc(tableName);
+        tempTable = tableName + ProjectConst.SHARD_TABLE_TAIL + getSqlKey();
     }
 
     private void selectInit() {
@@ -108,50 +117,58 @@ public class SelectParser extends SqlParser {
     }
 
     /**
-     * 去除where语句 TODO
+     * 去除where语句
      */
     public String getReduceSql() {
         if (reduceSql == null) {
-            this.reduceSql = this.lowerSql.replace(tableName, sqlKey);
+            this.reduceSql = "select " + selectSegm + " from " + tempTable
+                    + (groupSegm == null ? "" : " group " +groupSegm) + (orderSegm == null ? "" : " order " + orderSegm)
+                    + (limitSegm == null ? "" : " limit " + limitSegm);
         }
         return reduceSql;
     }
 
-    public String getlowerSqlHolder() {
-        if (lowerSqlHolder == null) {
-            this.lowerSqlHolder = lowerSql.replace(getTableName(), ProjectConst.SHARD_TABLE_TAIL + ProjectConst.SHARD_HOLDER);
-        }
-        return lowerSqlHolder;
+    public String getSelect0() {
+        if (select0 == null)
+            select0 = "create table " + tempTable + "(" + lowerSql.replace(tableName, shardTable(referShardValues[0])) + ")";
+        return select0;
     }
 
-    public static String formatShardSql(SelectParser parse, String shardValue) {
-        return "insert into " + parse.getSqlKey() + parse.getlowerSqlHolder().replace(ProjectConst.SHARD_HOLDER, shardValue);
+    public String getSelect(String shardValue) {
+        return "insert into " + tempTable + " " + lowerSql.replace(tableName, shardTable(shardValue));
+    }
+
+    private String shardTable(String shardValue) {
+        return tableName + ProjectConst.SHARD_TABLE_TAIL + shardValue;
     }
 
     public String getTableName() {
         return this.tableName;
     }
 
+    public String getTempTable() {
+        return tempTable;
+    }
+
     /**
      * 当查询条件指定了分片值, 只查对应分片表, 如果未指定, 则所有分片全查
      */
     public String[] getReferShardValues() {
-        // if (this.shardValues == null) {
-        //     if (this.getAfterWhere().contains(this.getShardField())) {
-        //         String afterShard = this.afterWhere.split( shardField)[1].trim();
-        //         if (afterShard.startsWith("in")) {
-        //             this.shardValues = getInValues(afterShard);
-        //         } else if (afterShard.startsWith("=")) {
-        //             this.shardValues = getEqValues(afterShard);
-        //         } else {
-        //             throw new SqlParseException("unsupport operation: " + afterShard);
-        //         }
-        //     } else {
-        //         this.shardValues = tableDesc.shardValues;
-        //     }
-        // }
-        // return shardValues;
-        return null;
+        if (this.referShardValues == null) {
+            if (whereSegm.contains(this.getShardField())) {
+                String afterShard = whereSegm.split( getShardField())[1].trim();
+                if (afterShard.startsWith("in")) {
+                    this.referShardValues = getInValues(afterShard);
+                } else if (afterShard.startsWith("=")) {
+                    this.referShardValues = getEqValues(afterShard);
+                } else {
+                    throw new SqlParseException("unsupport operation: " + afterShard);
+                }
+            } else {
+                this.referShardValues = tableDesc.shardValues;
+            }
+        }
+        return referShardValues;
     }
 
     /**
@@ -183,7 +200,6 @@ public class SelectParser extends SqlParser {
                 ", groupSegm='" + groupSegm + '\'' +
                 ", orderSegm='" + orderSegm + '\'' +
                 ", limitSegm='" + limitSegm + '\'' +
-                ", lowerSqlHolder='" + lowerSqlHolder + '\'' +
                 ", reduceSql='" + reduceSql + '\'' +
                 ", lowerSql='" + lowerSql + '\'' +
                 ", sqlType=" + sqlType +
