@@ -17,20 +17,15 @@ public enum JdbcHelper {
     JdbcHelper() {
     }
 
-    public MySQLJdbcTemplate getMysqlJdbc() {
-        Object target = templateMap.get("mysql." + ProjectConst.DATABASE);
-        if (target == null) {
-            synchronized (this) {
-                if (target == null) {
-                    target = new MySQLJdbcTemplate(ProjectConst.DATABASE);
-                    templateMap.put("mysql." + ProjectConst.DATABASE, target);
-                }
-            }
-        }
-        return (MySQLJdbcTemplate) target;
+    public MySQLJdbcTemplate getManageJdbc() {
+        return getUserDataJdbc(ProjectConst.MANAGE_DATABASE);
     }
 
-    public MySQLJdbcTemplate getMysqlJdbc(String dbName) {
+    public MySQLJdbcTemplate getManageDataJdbc() {
+        return getUserDataJdbc(ProjectConst.MANAGE_DATA_DATABASE);
+    }
+
+    public MySQLJdbcTemplate getUserDataJdbc(String dbName) {
         Object target = templateMap.get("mysql." + dbName);
         if (target == null) {
             synchronized (this) {

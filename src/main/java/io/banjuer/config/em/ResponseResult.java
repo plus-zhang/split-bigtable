@@ -20,7 +20,7 @@ public enum ResponseResult {
 		}
 	}
 
-	private ResponseResult(String value, String displayName) {
+	ResponseResult(String value, String displayName) {
 		this.value = value;
 		this.displayName = displayName;
 	}

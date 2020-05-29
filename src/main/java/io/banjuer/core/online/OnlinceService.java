@@ -1,5 +1,6 @@
 package io.banjuer.core.online;
 
+import io.banjuer.config.ProjectConst;
 import io.banjuer.config.em.SqlType;
 import io.banjuer.core.BaseService;
 import io.banjuer.core.SelectParser;
@@ -12,6 +13,7 @@ import io.banjuer.web.entity.BaseResponse;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -25,7 +27,6 @@ public class OnlinceService extends BaseService {
     ExecutorService executor = new ThreadPoolExecutor(8, 32, 30, TimeUnit.MINUTES, new ArrayBlockingQueue<>(1024));
 
     public BaseResponse execueSql(String sql) throws InterruptedException {
-        // SelectParser parse = SelectParser.parse(sql);
         SelectParser parse = new SelectParser(sql);
         SqlType sqlType = parse.getSqlType();
         return switch (sqlType) {
@@ -44,13 +45,15 @@ public class OnlinceService extends BaseService {
     }
 
     private BaseResponse doSelect(SelectParser parse) throws InterruptedException {
-        MySQLJdbcTemplate template = JdbcHelper.INSTANCE.getMysqlJdbc();
-        if (isCache(parse.getSqlKey())) {
-            return BaseResponse.success();
+        MySQLJdbcTemplate manage = JdbcHelper.INSTANCE.getManageJdbc();
+        MySQLJdbcTemplate data = JdbcHelper.INSTANCE.getManageDataJdbc();
+        String cache = getCache(parse.getSqlKey(), manage);
+        if (cache != null) {
+            return BaseResponse.success(cache);
         }
-        prepareSelect(parse, template);
-        mapSelect(parse, template);
-        return reduceSelect(parse, template);
+        prepareSelect(parse, data);
+        mapSelect(parse, data);
+        return reduceSelect(parse, data);
     }
 
     private void mapSelect(SelectParser parse, BaseJdbcTemplate template) throws InterruptedException {
@@ -74,7 +77,7 @@ public class OnlinceService extends BaseService {
                 rows.add(row);
             }
         });
-        executor.submit(new CleanWorker(parse.getSqlKey(), template, rows));
+        executor.submit(new CleanWorker(parse.getSqlKey(), parse.getTempTable(),rows));
         return BaseResponse.success(rows);
     }
 
@@ -86,8 +89,15 @@ public class OnlinceService extends BaseService {
         template.executeUpdate(select0, null);
     }
     
-    private boolean isCache(String sqlKey) {
-        return false;
+    private String getCache(String sqlKey, BaseJdbcTemplate template) {
+        String[] row = new String[1];
+        template.executeQuery("select * from " + ProjectConst.T_CACHE + " where sql_key=?", new Object[]{sqlKey}, rs -> {
+            int acc = rs.getInt(2);
+            String data = rs.getString(3);
+            row[0] = data;
+            template.executeUpdate("update " + ProjectConst.T_CACHE + " set use_times=? last_access=?", new Object[]{++acc, new Date()});
+        });
+        return row[0];
     }
 
     private BaseResponse doInsert(SelectParser parse) {

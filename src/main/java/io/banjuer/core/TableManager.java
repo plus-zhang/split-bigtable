@@ -56,19 +56,17 @@ public class TableManager {
     }
 
     private static void initTable(String tableName) {
-        MySQLJdbcTemplate template = JdbcHelper.INSTANCE.getMysqlJdbc();
-        // TODO 表导入完毕?
-        template.executeQuery(String.format("select * from %s where table_name=?", ProjectConst.TABLE_NAME_MANAGE), new Object[]{tableName}, rs -> {
+        MySQLJdbcTemplate template = JdbcHelper.INSTANCE.getManageJdbc();
+        template.executeQuery(String.format("select * from %s where table_name=?", ProjectConst.T_OL_IMPORT), new Object[]{tableName}, rs -> {
             int columnCount = rs.getMetaData().getColumnCount();
             if (columnCount != 1) {
                 throw new SqlParseException("table: " + tableName + " not managed");
             }
             if (rs.next()) {
-                // FIXME
-                String shardField = rs.getString(2);
-                String shardType= rs.getString(3);
-                String[] values = rs.getString(4).split(",");
-                SplitType splitType = SplitType.valueOf(rs.getString(5));
+                String shardField = rs.getString(4);
+                String shardType= rs.getString(5);
+                String[] values = rs.getString(6).split(",");
+                SplitType splitType = SplitType.valueOf(rs.getString(3));
                 MANAGER.put(tableName, new TableDesc(tableName, shardField, shardType, values, splitType));
             }
         });

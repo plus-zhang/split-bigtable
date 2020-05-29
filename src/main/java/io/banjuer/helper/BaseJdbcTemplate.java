@@ -128,7 +128,7 @@ public abstract class BaseJdbcTemplate {
     /**
      * 执行DDL语句
      */
-    public int executeDDL(String sql) throws SQLException {
+    public int executeDDL(String sql) {
         int rtn;
         Connection conn = null;
         Statement stmt = null;

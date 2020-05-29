@@ -5,8 +5,15 @@ public enum SqlType {
     /**
      *
      */
-    select,
-    update,
-    insert,
-    delete
+    select(10),
+    update(11),
+    insert(12),
+    delete(13);
+
+    private Integer code;
+
+    SqlType(Integer code) {
+        this.code = code;
+    }
+
 }

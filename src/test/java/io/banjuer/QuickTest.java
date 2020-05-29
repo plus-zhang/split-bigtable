@@ -10,7 +10,7 @@ import java.util.concurrent.CountDownLatch;
 
 public class QuickTest {
 
-    static MySQLJdbcTemplate template = JdbcHelper.INSTANCE.getMysqlJdbc("openblk699");
+    static MySQLJdbcTemplate template = JdbcHelper.INSTANCE.getUserDataJdbc("openblk699");
 
     public static void main(String[] args) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(8);
