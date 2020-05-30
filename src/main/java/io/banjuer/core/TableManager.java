@@ -13,13 +13,16 @@ public class TableManager {
 
     public static class TableDesc {
 
-        TableDesc(String tableName, String shardField, String shardType, String[] shardValues, SplitType splitType) {
+        TableDesc(String db, String tableName, String shardField, String shardType, String[] shardValues, SplitType splitType) {
+            this.db = db;
             this.tableName = tableName;
             this.shardField = shardField;
             this.shardType = shardType;
             this.shardValues = shardValues;
             this.splitType = splitType;
         }
+
+        String db;
 
         String tableName;
 
@@ -63,11 +66,12 @@ public class TableManager {
                 throw new SqlParseException("table: " + tableName + " not managed");
             }
             if (rs.next()) {
-                String shardField = rs.getString(4);
-                String shardType= rs.getString(5);
-                String[] values = rs.getString(6).split(",");
-                SplitType splitType = SplitType.valueOf(rs.getString(3));
-                MANAGER.put(tableName, new TableDesc(tableName, shardField, shardType, values, splitType));
+                String shardField = rs.getString(5);
+                String shardType= rs.getString(6);
+                String[] values = rs.getString(7).split(",");
+                SplitType splitType = SplitType.valueOf(rs.getString(4));
+                String db = rs.getString(2);
+                MANAGER.put(tableName, new TableDesc(db, tableName, shardField, shardType, values, splitType));
             }
         });
     }

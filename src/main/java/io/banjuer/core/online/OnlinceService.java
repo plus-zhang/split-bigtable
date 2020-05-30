@@ -6,6 +6,7 @@ import io.banjuer.core.BaseService;
 import io.banjuer.core.SelectParser;
 import io.banjuer.core.work.CleanWorker;
 import io.banjuer.core.work.SelectWorker;
+import io.banjuer.exception.SqlParseException;
 import io.banjuer.helper.BaseJdbcTemplate;
 import io.banjuer.helper.JdbcHelper;
 import io.banjuer.helper.MySQLJdbcTemplate;
@@ -29,12 +30,24 @@ public class OnlinceService extends BaseService {
     public BaseResponse execueSql(String sql) throws InterruptedException {
         SelectParser parse = new SelectParser(sql);
         SqlType sqlType = parse.getSqlType();
-        return switch (sqlType) {
-            case update -> doUpdate(parse);
-            case insert -> doInsert(parse);
-            case select -> doSelect(parse);
-            case delete -> doDelete(parse);
-        };
+        BaseResponse response;
+         switch (sqlType) {
+            case update:
+                response = doUpdate(parse);
+                break;
+             case insert:
+                 response = doInsert(parse);
+                 break;
+             case select:
+                 response = doSelect(parse);
+                 break;
+             case delete:
+                 response = doDelete(parse);
+                 break;
+             default:
+                 throw new SqlParseException("unsupport sql");
+        }
+        return response;
     }
 
     /**

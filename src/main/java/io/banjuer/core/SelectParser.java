@@ -52,17 +52,17 @@ public class SelectParser extends SqlParser {
         StringBuilder sb = new StringBuilder();
         for (int i = 1; i < ss.length; i ++) {
             switch (ss[i]) {
-                case "from" -> {
+                case "from":
                     selectSegm = sb.toString().trim();
                     sb.setLength(0);
                     lastKey = "from";
-                }
-                case "force" -> {
+                    break;
+                case "force":
                     tableName = sb.toString().trim();
                     sb.setLength(0);
                     lastKey = "force";
-                }
-                case "where" -> {
+                    break;
+                case "where":
                     if (!"force".equals(lastKey)) {
                         tableName = sb.toString().trim();
                     } else {
@@ -70,48 +70,86 @@ public class SelectParser extends SqlParser {
                     }
                     sb.setLength(0);
                     lastKey = "where";
-                }
-                case "group" -> {
+                    break;
+                case "group":
                     switch (lastKey) {
-                        case "force" -> forceSegm = sb.toString().trim();
-                        case "where" -> whereSegm = sb.toString().trim();
-                        default -> tableName = sb.toString();
+                        case "force":
+                            forceSegm = sb.toString().trim();
+                            break;
+                        case "where":
+                            whereSegm = sb.toString().trim();
+                            break;
+                        default:
+                            tableName = sb.toString();
+                            break;
                     }
                     sb.setLength(0);
                     lastKey = "group";
-                }
-                case "order" -> {
+                    break;
+                case "order":
                     switch (lastKey) {
-                        case "force" -> forceSegm = sb.toString().trim();
-                        case "where" -> whereSegm = sb.toString().trim();
-                        case "group" -> groupSegm = sb.toString().trim();
-                        default -> tableName = sb.toString().trim();
+                        case "force":
+                            forceSegm = sb.toString().trim();
+                            break;
+                        case "where":
+                            whereSegm = sb.toString().trim();
+                            break;
+                        case "group":
+                            groupSegm = sb.toString().trim();
+                            break;
+                        default:
+                            tableName = sb.toString().trim();
+                            break;
                     }
                     sb.setLength(0);
                     lastKey = "order";
-                }
-                case "limit" -> {
+                    break;
+                case "limit":
                     switch (lastKey) {
-                        case "force" -> forceSegm = sb.toString().trim();
-                        case "where" -> whereSegm = sb.toString().trim();
-                        case "group" -> groupSegm = sb.toString().trim();
-                        case "order" -> orderSegm = sb.toString().trim();
-                        default -> tableName = sb.toString().trim();
+                        case "force":
+                            forceSegm = sb.toString().trim();
+                            break;
+                        case "where":
+                            whereSegm = sb.toString().trim();
+                            break;
+                        case "group":
+                            groupSegm = sb.toString().trim();
+                            break;
+                        case "order":
+                            orderSegm = sb.toString().trim();
+                            break;
+                        default:
+                            tableName = sb.toString().trim();
+                            break;
                     }
                     sb.setLength(0);
                     lastKey = "limit";
-                }
-                default -> sb.append(' ').append(ss[i]);
+                    break;
+                default:
+                    sb.append(' ').append(ss[i]);
+                    break;
             }
         }
         if (sb.length() != 0) {
             switch (lastKey) {
-                case "force" -> forceSegm = sb.toString().trim();
-                case "where" -> whereSegm = sb.toString().trim();
-                case "group" -> groupSegm = sb.toString().trim();
-                case "order" -> orderSegm = sb.toString().trim();
-                case "limit" -> limitSegm = sb.toString().trim();
-                default -> tableName = sb.toString().trim();
+                case "force":
+                    forceSegm = sb.toString().trim();
+                    break;
+                case "where":
+                    whereSegm = sb.toString().trim();
+                    break;
+                case "group":
+                    groupSegm = sb.toString().trim();
+                    break;
+                case "order":
+                    orderSegm = sb.toString().trim();
+                    break;
+                case "limit":
+                    limitSegm = sb.toString().trim();
+                    break;
+                default:
+                    tableName = sb.toString().trim();
+                    break;
             }
         }
     }

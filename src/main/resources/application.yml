@@ -1,19 +1,43 @@
-mysql:
-  datasource:
-  name: mysqlDatasource
-  driver-class-name: com.mysql.cj.jdbc.Driver
-  url: jdbc:mysql://local:3306/example?useUnicode=true&characterEncoding=utf8
-  username: root
-  password: root
-  initialSize: 20
-  maxActive: 200
-  minIdle: 50
-  max-wait: 60000
-  remove-abandoned-timeout: 180
-  test-on-borrow: true
-  test-on-return: false
-  test-while-idle: true
-  validation-query: SELECT 1
-  time-between-eviction-runs-millis: 60000
-  min-evictable-idle-time-millis: 300000
-  type: com.alibaba.druid.pool.DruidDataSource
+# 开发环境配置
+server:
+  # 服务器的HTTP端口，默认为80
+  port: 80
+  servlet:
+    # 应用的访问路径
+    context-path: /
+  tomcat:
+    # tomcat的URI编码
+    uri-encoding: UTF-8
+    # tomcat最大线程数，默认为200
+    max-threads: 800
+    # Tomcat启动初始化的线程数，默认值25
+    min-spare-threads: 30
+
+# 日志配置
+logging:
+  level:
+    com.ruoyi: debug
+    org.springframework: warn
+
+# Spring配置
+spring:
+  # 模板引擎
+  thymeleaf:
+    mode: HTML
+    encoding: utf-8
+    # 禁用缓存
+    cache: false
+  # 资源信息
+  devtools:
+    restart:
+      # 热部署开关
+      enabled: true
+
+# 防止XSS攻击
+xss:
+  # 过滤开关
+  enabled: true
+  # 排除链接（多个用逗号分隔）
+  excludes: /system/notice/*
+  # 匹配链接
+  urlPatterns: /system/*,/monitor/*,/tool/*
